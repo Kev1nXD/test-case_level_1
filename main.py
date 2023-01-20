@@ -43,7 +43,6 @@ async def main():
 
 if __name__ == '__main__':
     start = time.perf_counter()
-    print("start")
     asyncio.run(main())
     file_data_frame.to_excel("Parser_ImageSize2.xlsx")
     end = time.perf_counter()
