@@ -10,6 +10,7 @@ import pandas
 from parser import parse_data
 
 EMAIL_ADDRESS = "example@gmail.com"
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QX2IhFyYmGDFMvovw2WFz3wAT4piAZ_8hi5Lzp7LjV0/edit#gid=1902149593"
 
 scopes = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -22,9 +23,7 @@ drive = GoogleDrive(google_auth)
 
 if __name__ == "__main__":
     start = time.perf_counter()
-    sheet_data = client.open_by_url(
-        "https://docs.google.com/spreadsheets/d/1QX2IhFyYmGDFMvovw2WFz3wAT4piAZ_8hi5Lzp7LjV0/edit#gid=1902149593"
-    ).get_worksheet(0)
+    sheet_data = client.open_by_url(GOOGLE_SHEET_URL).get_worksheet(0)
     data = pandas.DataFrame(sheet_data.get_all_records())
     worksheet = client.create("Solution")
     worksheet.share(EMAIL_ADDRESS, perm_type="user", role="writer", notify=False)
