@@ -11,6 +11,13 @@ class Sheet:
 
 
 async def get_size(response: ClientResponse) -> str:
+    """
+    function is used to read the image from the response and return
+    the size of the image in the format "width x height"
+
+    :param response: response from page
+    :return: size of image or "image not found" if page doesn't contain it
+    """
     try:
         data = await response.read()
         buff = BytesIO(data)
@@ -22,11 +29,18 @@ async def get_size(response: ClientResponse) -> str:
 
 
 async def store_size(
-    session: ClientSession,
-        link: str,
-        index: int,
-        data_to_parse: DataFrame
+    session: ClientSession, link: str, index: int, data_to_parse: DataFrame
 ):
+    """
+    function is used to make a GET request to the link of the
+    image, get the size of the image using 'get_size' function,
+    and store the size in a new column of the DataFrame.
+
+    :param session: client session
+    :param link: link which should contain image
+    :param index: index of dataframe row
+    :param data_to_parse: DataFrame which contain links and where we should write image sizes
+    """
     try:
         async with session.get(url=link) as response:
             size = await get_size(response)
@@ -36,6 +50,14 @@ async def store_size(
 
 
 async def parser(data_to_parse: DataFrame):
+    """
+    function is used to create a client session, make GET
+    requests to all the links in the DataFrame using the store_size
+    function, and gather all the results using 'asyncio.gather'
+
+    :param data_to_parse: DataFrame which contain links and where we should write image sizes
+    :return:
+    """
     try:
         async with ClientSession() as session:
             return await asyncio.gather(
