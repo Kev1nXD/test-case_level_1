@@ -1,51 +1,34 @@
 import time
 
-import asyncio
-import aiohttp
-from aiohttp import ClientSession, ClientResponse, ClientPayloadError
-from PIL import Image, UnidentifiedImageError
-import pandas as pd
-import io
+import gspread
+import gspread_dataframe as gd
+from google.oauth2.service_account import Credentials
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+import pandas
 
-file_data_frame = pd.read_excel("Parser_ImageSize.xlsx")
-amount_of_links = file_data_frame.index.stop
+from parser import parse_data
 
+EMAIL_ADDRESS = "example@gmail.com"
 
-async def get_size(response: ClientResponse):
-    try:
-        data = await response.read()
-        buff = io.BytesIO(data)
-        size = Image.open(buff).size
-        return f"{size[0]}x{size[1]}"
-    except UnidentifiedImageError as e:
-        print(f"{e}; image not found")
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+creds = Credentials.from_service_account_file("credentials.json", scopes=scopes)
+client = gspread.authorize(creds)
+google_auth = GoogleAuth()
+drive = GoogleDrive(google_auth)
 
-
-async def store_size(session: ClientSession, link: str, index: int):
-    try:
-        async with session.get(url=link) as response:
-            size = await get_size(response)
-            file_data_frame.loc[index]["SIZE"] = size
-    except TypeError as e:
-        print(f"{e}; URL is not valid")
-
-
-async def main():
-    try:
-        async with aiohttp.ClientSession() as session:
-            return await asyncio.gather(
-                *[store_size(session=session,
-                             link=file_data_frame.loc[index]["image_url"],
-                             index=index
-                             ) for index in range(0, amount_of_links)]
-            )
-    except ClientPayloadError as e:
-        print(e)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     start = time.perf_counter()
-    asyncio.run(main())
-    file_data_frame.to_excel("Parser_ImageSize2.xlsx", sheet_name="Solution")
+    sheet_data = client.open_by_url(
+        "https://docs.google.com/spreadsheets/d/1QX2IhFyYmGDFMvovw2WFz3wAT4piAZ_8hi5Lzp7LjV0/edit#gid=1902149593"
+    ).get_worksheet(0)
+    data = pandas.DataFrame(sheet_data.get_all_records())
+    worksheet = client.create("Solution")
+    worksheet.share(EMAIL_ADDRESS, perm_type="user", role="writer", notify=False)
+    gd.set_with_dataframe(worksheet.get_worksheet(0), parse_data(data_to_parse=data))
     end = time.perf_counter()
     print("Elapsed", end - start)
+    print(worksheet.url)
